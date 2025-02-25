@@ -1,10 +1,8 @@
 import { useState, useCallback, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
 import { Alert } from '@mantine/core';
-import { Communication, HumanName, Patient, Practitioner } from '@medplum/fhirtypes';
-import { createReference, formatGivenName, getReferenceString, normalizeErrorString } from '@medplum/core';
-import { BaseChat, Document, useMedplum, useMedplumProfile, useResource } from '@medplum/react';
-import { Loading } from '../components/Loading';
+import { Communication, Patient } from '@medplum/fhirtypes';
+import { createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
+import { BaseChat, Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { showNotification } from '@mantine/notifications';
 import { IconCircleOff } from '@tabler/icons-react';
 
@@ -13,22 +11,12 @@ export function Messages(): JSX.Element {
   const profile = useMedplumProfile() as Patient;
   const profileRef = useMemo(() => (profile ? createReference(profile) : undefined), [profile]);
   const [communications, setCommunications] = useState<Communication[]>([]);
-  const { practitionerId } = useParams();
-  const practitioner = useResource<Practitioner>({
-    reference: `Practitioner/${practitionerId}`,
-  });
 
   const sendMessage = useCallback(
     (content: string): void => {
-      if (!practitioner) {
-        return;
-      }
-
       if (!profileRef) {
         return;
       }
-
-      const practitionerRef = createReference(practitioner);
 
       medplum
         .createResource<Communication>({
@@ -36,7 +24,6 @@ export function Messages(): JSX.Element {
           status: 'in-progress',
           sender: profileRef,
           subject: profileRef,
-          recipient: [practitionerRef],
           sent: new Date().toISOString(),
           payload: [{ contentString: content }],
         })
@@ -49,7 +36,7 @@ export function Messages(): JSX.Element {
           });
         });
     },
-    [medplum, profileRef, practitioner]
+    [medplum, profileRef]
   );
 
   const handleMessageReceived = useCallback(
@@ -80,15 +67,11 @@ export function Messages(): JSX.Element {
     return <Alert color="red">Error: Provider profile not found</Alert>;
   }
 
-  if (!practitioner) {
-    return <Loading />;
-  }
-
   return (
     <Document width={800}>
       <BaseChat
-        title={`Chat with ${formatGivenName(practitioner.name?.[0] as HumanName)}`}
-        query={`sender=${getReferenceString(profile)},Practitioner/${practitionerId}&recipient=${getReferenceString(profile)},Practitioner/${practitionerId}`}
+        title="Send us a message"
+        query={`subject=${getReferenceString(profile)}`}
         communications={communications}
         setCommunications={setCommunications}
         sendMessage={sendMessage}
