@@ -9,10 +9,12 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { App } from './App';
+import { MEDPLUM_BASE_URL } from './config';
 
 const medplum = new MedplumClient({
   // To run FooMedical locally, you can set the baseURL in this constructor
   // baseUrl: http://localhost:8103
+  baseUrl: MEDPLUM_BASE_URL,
   onUnauthenticated: () => (window.location.href = '/'),
 });
 
